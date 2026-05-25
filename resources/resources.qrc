@@ -9,5 +9,6 @@
         <file>icons/checkmark.svg</file>
         <file>icons/close.svg</file>
         <file>icons/close_hover.svg</file>
+        <file>icons/video_off.svg</file>
     </qresource>
 </RCC>

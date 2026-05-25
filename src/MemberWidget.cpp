@@ -41,6 +41,11 @@ MemberWidget::MemberWidget(const QJsonObject& data, QWidget* parent) : QFrame(pa
     liveLabel->setVisible(false);
     layout->addWidget(liveLabel);
 
+    videoIcon = new AnimatedIconWidget(loadSvgData(":/icons/video_off.svg"), loadSvgData(":/icons/video_off.svg"), this);
+    videoIcon->setFixedSize(20, 20);
+    layout->addWidget(videoIcon);
+    videoIcon->setVisible(false);
+
     micIcon = new AnimatedIconWidget(loadSvgData(":/icons/mic_on.svg"), loadSvgData(":/icons/mic_off.svg"), this);
     micIcon->setFixedSize(20, 20);
     layout->addWidget(micIcon);
@@ -57,6 +62,7 @@ void MemberWidget::updateData(const QJsonObject& data) {
     if (data.contains("avatarUrl")) avatarUrl = data["avatarUrl"].toString();
 
     bool muted = data["isMuted"].toBool() || data["isServerMuted"].toBool();
+    bool video = data["isVideoOn"].toBool();
     bool deafened = data["isDeafened"].toBool() || data["isServerDeafened"].toBool();
     bool speaking = data["isSpeaking"].toBool();
     bool streaming = data["isStreaming"].toBool();
@@ -66,22 +72,30 @@ void MemberWidget::updateData(const QJsonObject& data) {
         currentDeafened = deafened;
         currentSpeaking = speaking;
         currentStreaming = streaming;
+        currentVideo = video;
 
         liveLabel->setVisible(streaming);
-
         speakingIntensity = speaking ? 1.0 : 0.0;
         isFirstUpdate = false;
-        updateStatusIcons(muted, deafened);
+        updateStatusIcons(muted, deafened, video);
         updateLabelColors();
     } else {
+        bool statusChanged = false;
         if (streaming != currentStreaming) {
             currentStreaming = streaming;
             liveLabel->setVisible(streaming);
         }
+        if (video != currentVideo) {
+            currentVideo = video;
+            statusChanged = true;
+        }
         if (muted != currentMuted || deafened != currentDeafened) {
             currentMuted = muted;
             currentDeafened = deafened;
-            animateStateChange(muted, deafened);
+            statusChanged = true;
+        }
+        if (statusChanged) {
+            animateStateChange(muted, deafened, video);
         }
         if (speaking != currentSpeaking) {
             currentSpeaking = speaking;
@@ -117,16 +131,17 @@ void MemberWidget::updateLabelColors() {
     nameLabel->setPalette(pal);
 }
 
-void MemberWidget::animateStateChange(bool muted, bool deafened) {
-    updateStatusIcons(muted, deafened);
+void MemberWidget::animateStateChange(bool muted, bool deafened, bool video) {
+    updateStatusIcons(muted, deafened, video);
     if (!currentSpeaking) {
         updateLabelColors();
     }
 }
 
-void MemberWidget::updateStatusIcons(bool muted, bool deafened) {
+void MemberWidget::updateStatusIcons(bool muted, bool deafened, bool video) {
     micIcon->setState(muted || deafened, !isFirstUpdate);
     deafenIcon->setState(deafened, !isFirstUpdate);
+    videoIcon->setVisible(video);
 }
 
 void MemberWidget::setAvatar(const QPixmap& pixmap) {
