@@ -20,8 +20,15 @@ function getToggleStore() {
     return CachedToggleStore;
 }
 
+let FailedToFindMediaEngine = false;
 function getMediaEngineStore() {
-    if (!CachedMediaEngineStore) CachedMediaEngineStore = Vencord.Webpack.find(m => m && typeof m.getSelfMute === "function");
+    if (CachedMediaEngineStore || FailedToFindMediaEngine) return CachedMediaEngineStore;
+
+    CachedMediaEngineStore = Vencord.Webpack.find(m => m && typeof m.getSelfMute === "function");
+    if (!CachedMediaEngineStore) {
+        FailedToFindMediaEngine = true;
+        console.warn("[DeskMute] Failed to find MediaEngineStore. Module structure may have changed.");
+    }
     return CachedMediaEngineStore;
 }
 
@@ -113,10 +120,30 @@ function buildOverlayState() {
     }
 }
 
+function checkAndSendUpdate() {
+    const state = buildOverlayState();
+    const stateStr = JSON.stringify(state);
+    if (stateStr !== lastStateStr) {
+        lastStateStr = stateStr;
+        Native.updateState(state);
+    }
+}
+
 export default definePlugin({
     name: "DeskMute",
     description: "TCP Broadcast API for Voice Overlay",
     authors: [{ name: "swzo", id: 0n }],
+    flux: {
+        SPEAKING({ channelId }: { channelId: string; }) {
+            const activeChannelId = getVoiceChannelStore()?.getVoiceChannelId();
+            if (channelId && channelId === activeChannelId) {
+                setTimeout(checkAndSendUpdate, 0);
+            }
+        },
+        VOICE_STATE_UPDATES() {
+            setTimeout(checkAndSendUpdate, 0);
+        }
+    },
 
     start() {
         Native.startServer();
@@ -127,12 +154,7 @@ export default definePlugin({
         }, 100);
 
         syncInterval = setInterval(() => {
-            const state = buildOverlayState();
-            const stateStr = JSON.stringify(state);
-            if (stateStr !== lastStateStr) {
-                lastStateStr = stateStr;
-                Native.updateState(state);
-            }
+            checkAndSendUpdate();
         }, 100);
     },
 

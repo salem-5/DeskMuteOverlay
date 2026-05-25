@@ -3,8 +3,10 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPropertyAnimation>
-#include <QVariantAnimation>
+#include <QRadialGradient>
+#include <QPalette>
 #include <QFile>
+#include "AnimatedIconWidget.h"
 
 static QByteArray loadSvgData(const QString& path) {
     QFile file(path);
@@ -51,32 +53,61 @@ void MemberWidget::updateData(const QJsonObject& data) {
 
     bool muted = data["isMuted"].toBool() || data["isServerMuted"].toBool();
     bool deafened = data["isDeafened"].toBool() || data["isServerDeafened"].toBool();
+    bool speaking = data["isSpeaking"].toBool();
 
     if (isFirstUpdate) {
         currentMuted = muted;
         currentDeafened = deafened;
+        currentSpeaking = speaking;
+        speakingIntensity = speaking ? 1.0 : 0.0;
         isFirstUpdate = false;
         updateStatusIcons(muted, deafened);
-        nameLabel->setStyleSheet(QString("color: rgba(255, 255, 255, %1);").arg((muted || deafened) ? "0.6" : "1.0"));
+        updateLabelColors();
     } else {
         if (muted != currentMuted || deafened != currentDeafened) {
-            animateStateChange(muted, deafened);
             currentMuted = muted;
             currentDeafened = deafened;
+            animateStateChange(muted, deafened);
+        }
+        if (speaking != currentSpeaking) {
+            currentSpeaking = speaking;
+            auto* anim = new QVariantAnimation(this);
+            anim->setDuration(200);
+            anim->setStartValue(speakingIntensity);
+            anim->setEndValue(speaking ? 1.0 : 0.0);
+            connect(anim, &QVariantAnimation::valueChanged, this, [this](const QVariant& value) {
+                speakingIntensity = value.toReal();
+                updateLabelColors();
+                update();
+            });
+            anim->start(QAbstractAnimation::DeleteWhenStopped);
         }
     }
 }
 
+QColor MemberWidget::interpolateColor(const QColor& start, const QColor& end, qreal progress) {
+    return QColor(
+        start.red() + (end.red() - start.red()) * progress,
+        start.green() + (end.green() - start.green()) * progress,
+        start.blue() + (end.blue() - start.blue()) * progress,
+        start.alpha() + (end.alpha() - start.alpha()) * progress
+    );
+}
+
+void MemberWidget::updateLabelColors() {
+    QColor normalColor(255, 255, 255, (currentMuted || currentDeafened) ? 153 : 255);
+    QColor speakingColor(149, 250, 142, 255);
+
+    QPalette pal = nameLabel->palette();
+    pal.setColor(QPalette::WindowText, interpolateColor(normalColor, speakingColor, speakingIntensity));
+    nameLabel->setPalette(pal);
+}
+
 void MemberWidget::animateStateChange(bool muted, bool deafened) {
     updateStatusIcons(muted, deafened);
-    auto* colorAnim = new QVariantAnimation(this);
-    colorAnim->setDuration(300);
-    colorAnim->setStartValue((currentMuted || currentDeafened) ? 0.6 : 1.0);
-    colorAnim->setEndValue((muted || deafened) ? 0.6 : 1.0);
-    connect(colorAnim, &QVariantAnimation::valueChanged, this, [this](const QVariant &val){
-        nameLabel->setStyleSheet(QString("color: rgba(255, 255, 255, %1);").arg(val.toDouble()));
-    });
-    colorAnim->start(QAbstractAnimation::DeleteWhenStopped);
+    if (!currentSpeaking) {
+        updateLabelColors();
+    }
 }
 
 void MemberWidget::updateStatusIcons(bool muted, bool deafened) {
@@ -92,6 +123,7 @@ void MemberWidget::setAvatar(const QPixmap& pixmap) {
     QPainterPath path;
     path.addEllipse(0, 0, 32, 32);
     painter.setClipPath(path);
+
     if (pixmap.isNull()) {
         painter.fillRect(0, 0, 32, 32, QColor("#5865F2"));
         painter.setPen(QColor("#FFFFFF"));
@@ -104,6 +136,33 @@ void MemberWidget::setAvatar(const QPixmap& pixmap) {
     avatarLabel->setPixmap(target);
 }
 
+void MemberWidget::paintEvent(QPaintEvent* event) {
+
+    QFrame::paintEvent(event);
+
+    if (speakingIntensity > 0.0) {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(rect(), 16, 16);
+        painter.setClipPath(clipPath);
+
+        QPointF center(avatarLabel->pos().x() + avatarLabel->width() / 2.0,avatarLabel->pos().y() + avatarLabel->height() / 2.0);
+
+        QRadialGradient glowGrad(center, 80.0);
+        glowGrad.setColorAt(0.0, QColor(120, 255, 205, int(70 * speakingIntensity)));
+        glowGrad.setColorAt(0.5, QColor(120, 255, 205, int(20 * speakingIntensity)));
+        glowGrad.setColorAt(1.0, Qt::transparent);
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(glowGrad);
+        painter.drawEllipse(center, 80.0, 80.0);
+
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(QColor(120, 255, 205, int(100 * speakingIntensity)), 1.5));
+        painter.drawEllipse(center, 17.0, 17.0);
+    }
+}
 void MemberWidget::animateIn() {
     setMinimumHeight(0);
     setMaximumHeight(0);

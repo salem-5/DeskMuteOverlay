@@ -1,12 +1,13 @@
-#ifndef MEMBERWIDGET_H
-#define MEMBERWIDGET_H
+#pragma once
 
 #include <QFrame>
 #include <QLabel>
 #include <QJsonObject>
-#include <QPixmap>
 #include <QGraphicsOpacityEffect>
-#include "AnimatedIconWidget.h"
+#include <QVariantAnimation>
+#include <QPaintEvent>
+
+class AnimatedIconWidget;
 
 class MemberWidget : public QFrame {
     Q_OBJECT
@@ -15,31 +16,30 @@ public:
 
     void updateData(const QJsonObject& data);
     void setAvatar(const QPixmap& pixmap);
-
     void animateIn();
     void animateOut();
 
     QString memberId;
     QString avatarUrl;
 
+protected:
+    void paintEvent(QPaintEvent* event) override;
 private:
-    void updateStatusIcons(bool muted, bool deafened);
     void animateStateChange(bool muted, bool deafened);
-    void redrawAvatar();
+    void updateStatusIcons(bool muted, bool deafened);
+    void updateLabelColors();
+    QColor interpolateColor(const QColor& start, const QColor& end, qreal progress);
 
     QLabel* avatarLabel;
     QLabel* nameLabel;
-
     AnimatedIconWidget* micIcon;
     AnimatedIconWidget* deafenIcon;
 
     QGraphicsOpacityEffect* opacityEffect;
 
-    QPixmap m_cachedAvatar;
     bool isFirstUpdate = true;
     bool currentMuted = false;
     bool currentDeafened = false;
     bool currentSpeaking = false;
+    qreal speakingIntensity = 0.0;
 };
-
-#endif

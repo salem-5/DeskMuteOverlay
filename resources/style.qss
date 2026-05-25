@@ -9,18 +9,17 @@ ConfigWindow QPushButton#configCloseBtn:hover {
     image: url(:/icons/close_hover.svg);
 }
 
-/* ================= MemberWidget ================= */
 MemberWidget {
     background-color: rgba(0, 0, 0, 0.6);
     border-radius: 16px;
 }
 
 MemberWidget QLabel#nameLabel {
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 15px;
+    font-weight: 600;
+    background: transparent;
 }
 
-/* ================= OverlayWindow ================= */
 QLabel#channelTitle {
     color: #FFFFFF;
     font-weight: bold;
@@ -51,7 +50,6 @@ QWidget#OverlayContainer[containerState="normal"] {
     border: none;
 }
 
-/* ================= ConfigWindow ================= */
 QWidget#connectionPanel {
     background-color: #18191C;
     border-top-left-radius: 16px;
@@ -87,7 +85,7 @@ ConfigWindow QCheckBox::indicator:hover {
 ConfigWindow QCheckBox::indicator:checked {
     background-color: #5865F2;
     border: 1px solid #5865F2;
-    image: url(:/icons/checkmark.svg); /* Adds the checkmark asset on click */
+    image: url(:/icons/checkmark.svg);
 }
 
 ConfigWindow QLabel {
@@ -180,7 +178,7 @@ ConfigWindow QScrollArea {
 
 ConfigWindow QScrollBar:vertical {
     background: transparent; /* Removes the hard edge track */
-    width: 8px; /* Slightly thicker for usability */
+    width: 8px;
     margin: 0px;
 }
 
@@ -207,12 +205,11 @@ QWidget#scrollContent {
     background: transparent;
 }
 
-/* ================= BindButton ================= */
 BindButton {
     background-color: #1E1F22;
     border: none;
     border-radius: 8px;
-    padding: 10px 12px; /* Increased vertical padding to completely eliminate clipping on Windows */
+    padding: 10px 12px;
     color: #F2F3F5;
     font-weight: bold;
     text-align: left;
