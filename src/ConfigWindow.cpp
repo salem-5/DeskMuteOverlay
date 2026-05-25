@@ -15,6 +15,24 @@
 #include <QJsonObject>
 #include <QTimer>
 #include <QUrl>
+#include <QProcess>
+#include <QCoreApplication>
+
+bool ScrollEater::eventFilter(QObject *obj, QEvent *event) {
+    if (event->type() == QEvent::Wheel) {
+        QWidget *widget = qobject_cast<QWidget*>(obj);
+
+        if (widget && !widget->hasFocus()) {
+            event->ignore();
+
+            if (widget->parentWidget()) {
+                QCoreApplication::sendEvent(widget->parentWidget(), event);
+            }
+            return true;
+        }
+    }
+    return QObject::eventFilter(obj, event);
+}
 
 BindButton::BindButton(const QString& currentBind, QWidget* parent) : QPushButton(currentBind, parent) {
     currentBindStr = currentBind;
@@ -96,6 +114,10 @@ void ConfigWindow::fetchGistTunnel(bool force) {
 
         lastTunnel = content;
 
+        if (auto* lbl = findChild<QLabel*>("lblActiveGist")) {
+            lbl->setText(content);
+        }
+
         QStringList parts = content.split(":");
         if (parts.size() != 2)
             return;
@@ -105,6 +127,9 @@ void ConfigWindow::fetchGistTunnel(bool force) {
 
         hostInput->setText(host);
         portInput->setValue(port);
+
+        if (auto* lbl = findChild<QLabel*>("lblActiveHost")) lbl->setText(host);
+        if (auto* lbl = findChild<QLabel*>("lblActivePort")) lbl->setText(QString::number(port));
 
         QSettings().setValue("host", host);
         QSettings().setValue("port", port);
@@ -116,13 +141,72 @@ void ConfigWindow::fetchGistTunnel(bool force) {
 ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
-    resize(380, 660);
+
+    resize(580, 660);
+
+    auto* mainLayout = new QHBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+
+    QSettings settings;
+
+    QWidget* connectionPanel = new QWidget(this);
+    connectionPanel->setObjectName("connectionPanel");
+    connectionPanel->setFixedWidth(200);
+
+    auto* connLayout = new QVBoxLayout(connectionPanel);
+    connLayout->setContentsMargins(20, 20, 20, 20);
+
+    QLabel* connTitle = new QLabel("Connection", this);
+    connTitle->setObjectName("configTitle");
+    connLayout->addWidget(connTitle);
+    connLayout->addSpacing(15);
+
+    connLayout->addWidget(new QLabel("LIVE STATUS", this));
+    QLabel* lblStatus = new QLabel("CONNECTING...", this);
+    lblStatus->setObjectName("lblLiveStatus");
+    lblStatus->setStyleSheet("color: #FEE75C; font-weight: bold;");
+    connLayout->addWidget(lblStatus);
+    connLayout->addSpacing(15);
+
+    connLayout->addWidget(new QLabel("CONNECTED HOST", this));
+    QLabel* lblActiveHost = new QLabel(settings.value("host", "127.0.0.1").toString(), this);
+    lblActiveHost->setObjectName("lblActiveHost");
+    connLayout->addWidget(lblActiveHost);
+    connLayout->addSpacing(15);
+
+    connLayout->addWidget(new QLabel("CONNECTED PORT", this));
+    QLabel* lblActivePort = new QLabel(settings.value("port", 3845).toString(), this);
+    lblActivePort->setObjectName("lblActivePort");
+    connLayout->addWidget(lblActivePort);
+    connLayout->addSpacing(15);
+
+    connLayout->addWidget(new QLabel("LAST GIST TUNNEL", this));
+    QLabel* lblActiveGist = new QLabel("None Cached", this);
+    lblActiveGist->setObjectName("lblActiveGist");
+    lblActiveGist->setWordWrap(true);
+    connLayout->addWidget(lblActiveGist);
+
+    connLayout->addStretch();
+
+    QPushButton* btnRestart = new QPushButton("Restart DeskMute", this);
+    btnRestart->setObjectName("btnRestartApp");
+    connect(btnRestart, &QPushButton::clicked, this, []() {
+        QStringList args = QCoreApplication::arguments();
+        args.removeFirst();
+        if (!args.contains("--config")) {
+            args.append("--config");
+        }
+
+        QProcess::startDetached(QCoreApplication::applicationFilePath(), args);
+        QCoreApplication::quit();
+    });
+    connLayout->addWidget(btnRestart);
+
+    mainLayout->addWidget(connectionPanel);
 
     QWidget* container = new QWidget(this);
     container->setObjectName("mainContainer");
-
-    auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addWidget(container);
 
     auto* containerLayout = new QVBoxLayout(container);
@@ -132,7 +216,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     QLabel* title = new QLabel("Overlay Settings", this);
     title->setObjectName("configTitle");
 
-    QPushButton* closeBtn = new QPushButton("✕", this);
+    QPushButton* closeBtn = new QPushButton("", this);
     closeBtn->setObjectName("configCloseBtn");
     closeBtn->setFixedSize(26, 26);
     connect(closeBtn, &QPushButton::clicked, this, &QWidget::hide);
@@ -152,8 +236,6 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
 
     auto* layout = new QVBoxLayout(scrollContent);
     layout->setContentsMargins(0, 0, 8, 0);
-
-    QSettings settings;
 
     auto* bindsLayout = new QHBoxLayout();
 
@@ -180,7 +262,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     layout->addLayout(bindsLayout);
 
     auto* secondaryBindsLayout = new QHBoxLayout();
-
+    col2->addSpacing(15);
     auto* col3 = new QVBoxLayout();
     col3->addWidget(new QLabel("OPEN SETTINGS BIND", this));
     bindConfig = new BindButton(settings.value("bindConfig", "Ctrl+Shift+O").toString(), this);
@@ -228,6 +310,9 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
         QSettings().setValue("host", hostInput->text());
         QSettings().setValue("port", portInput->value());
         emit connectionSettingsChanged(hostInput->text(), portInput->value());
+
+        if (auto* lbl = findChild<QLabel*>("lblActiveHost")) lbl->setText(hostInput->text());
+        if (auto* lbl = findChild<QLabel*>("lblActivePort")) lbl->setText(QString::number(portInput->value()));
     });
     layout->addWidget(btnApplyNetwork);
 
@@ -281,6 +366,12 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
         emit opacityChanged(value / 100.0);
     });
     layout->addWidget(opacitySlider);
+
+    ScrollEater* scrollEater = new ScrollEater(this);
+    portInput->installEventFilter(scrollEater);
+    opacitySlider->installEventFilter(scrollEater);
+    portInput->setFocusPolicy(Qt::StrongFocus);
+    opacitySlider->setFocusPolicy(Qt::StrongFocus);
 
     layout->addSpacing(10);
 

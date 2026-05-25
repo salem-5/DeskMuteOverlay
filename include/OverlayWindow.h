@@ -29,6 +29,7 @@ public slots:
     void setConfigActive(bool active);
     void setOverlayOpacity(qreal opacity);
     void toggleVisibility();
+    void showConnecting();
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;

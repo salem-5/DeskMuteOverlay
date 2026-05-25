@@ -6,5 +6,8 @@
         <file>icons/mic_off.svg</file>
         <file>icons/headset_on.svg</file>
         <file>icons/headset_off.svg</file>
+        <file>icons/checkmark.svg</file>
+        <file>icons/close.svg</file>
+        <file>icons/close_hover.svg</file>
     </qresource>
 </RCC>

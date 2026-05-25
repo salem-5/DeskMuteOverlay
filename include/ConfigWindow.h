@@ -17,6 +17,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QUrl>
+class ScrollEater : public QObject {
+public:
+    explicit ScrollEater(QObject* parent = nullptr) : QObject(parent) {}
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+};
 
 class BindButton : public QPushButton {
     Q_OBJECT

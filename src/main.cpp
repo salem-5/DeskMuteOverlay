@@ -3,6 +3,8 @@
 #include <QSettings>
 #include <functional>
 #include <QFile>
+#include <QLabel>
+#include <QProcess>
 
 #include "../include/DiscordClient.h"
 #include "../include/OverlayWindow.h"
@@ -56,7 +58,27 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&client, &DiscordClient::stateReceived, &overlay, &OverlayWindow::updateState);
     QObject::connect(&client, &DiscordClient::disconnected, &overlay, &OverlayWindow::showDisconnected);
-    QObject::connect(&config, &ConfigWindow::connectionSettingsChanged, &client, &DiscordClient::setConnectionDetails);
+
+    QObject::connect(&config, &ConfigWindow::connectionSettingsChanged, [&](const QString& host, int port) {
+        client.setConnectionDetails(host, port);
+        if (auto* lbl = config.findChild<QLabel*>("lblLiveStatus")) {
+            lbl->setText("CONNECTING...");
+            lbl->setStyleSheet("color: #FEE75C; font-weight: bold;");
+        }
+    });
+
+    QObject::connect(&client, &DiscordClient::stateReceived, &config, [&config]() {
+        if (auto* lbl = config.findChild<QLabel*>("lblLiveStatus")) {
+            lbl->setText("CONNECTED");
+            lbl->setStyleSheet("color: #4BB543; font-weight: bold;");
+        }
+    });
+    QObject::connect(&client, &DiscordClient::disconnected, &config, [&config]() {
+        if (auto* lbl = config.findChild<QLabel*>("lblLiveStatus")) {
+            lbl->setText("DISCONNECTED");
+            lbl->setStyleSheet("color: #FF4B4B; font-weight: bold;");
+        }
+    });
 
     QObject::connect(&config, &ConfigWindow::toggleEditMode, &overlay, &OverlayWindow::setEditMode);
     QObject::connect(&config, &ConfigWindow::hideChannelNameChanged, &overlay, &OverlayWindow::setHideChannelName);
@@ -78,11 +100,12 @@ int main(int argc, char *argv[]) {
             config.activateWindow();
         }
     };
+    if (QCoreApplication::arguments().contains("--config")) showConfig();
     QObject::connect(&overlay, &OverlayWindow::openSettingsRequested, showConfig);
 
     QString muteSeq = settings.value("bindMute", "Ctrl+M").toString();
     QString deafenSeq = settings.value("bindDeafen", "Ctrl+D").toString();
-    QString configSeq = settings.value("bindConfig", "Ctrl+Shift+D").toString();
+    QString configSeq = settings.value("bindConfig", "Ctrl+Shift+O").toString();
     QString toggleSeq = settings.value("bindToggle", "Ctrl+Shift+T").toString();
 
     auto getValidSeq = [](const QString& seq) {

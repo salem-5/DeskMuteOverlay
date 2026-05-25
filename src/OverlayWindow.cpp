@@ -10,6 +10,7 @@
 #include <QDebug>
 #include <QApplication>
 #include <QStyle>
+#include <QProcess>
 
 OverlayWindow::OverlayWindow(QWidget* parent) : QMainWindow(parent), networkManager(new QNetworkAccessManager(this)) {
     setWindowFlags(Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::WindowTransparentForInput);
@@ -74,6 +75,12 @@ void OverlayWindow::setupTrayIcon() {
     });
     trayMenu->addSeparator();
     trayMenu->addAction("Settings", this, &OverlayWindow::openSettingsRequested);
+
+    trayMenu->addAction("Restart DeskMute", this, []() {
+        QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments());
+        QCoreApplication::quit();
+    });
+
     trayMenu->addAction("Quit DeskMute", qApp, &QCoreApplication::quit);
 
     trayIcon->setContextMenu(trayMenu);
@@ -153,6 +160,16 @@ void OverlayWindow::mouseMoveEvent(QMouseEvent* event) {
 
 void OverlayWindow::mouseReleaseEvent(QMouseEvent* event) {
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void OverlayWindow::showConnecting() {
+    currentlyInVc = false;
+    channelTitle->setText("CONNECTING...");
+
+    for (auto* widget : activeWidgets.values()) {
+        widget->animateOut();
+    }
+    activeWidgets.clear();
 }
 
 void OverlayWindow::showDisconnected() {

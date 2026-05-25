@@ -12,7 +12,7 @@ public:
     explicit DiscordClient(QObject* parent = nullptr);
     void connectToServer();
     void sendAction(const QString& action);
-
+    void connecting();
 public slots:
     void setConnectionDetails(const QString& host, int port);
 

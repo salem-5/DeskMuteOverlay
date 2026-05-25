@@ -1,3 +1,14 @@
+ConfigWindow QPushButton#configCloseBtn {
+    background-color: transparent;
+    border: none;
+    image: url(:/icons/close.svg);
+    padding: 4px;
+}
+
+ConfigWindow QPushButton#configCloseBtn:hover {
+    image: url(:/icons/close_hover.svg);
+}
+
 /* ================= MemberWidget ================= */
 MemberWidget {
     background-color: rgba(0, 0, 0, 0.6);
@@ -41,10 +52,17 @@ QWidget#OverlayContainer[containerState="normal"] {
 }
 
 /* ================= ConfigWindow ================= */
+QWidget#connectionPanel {
+    background-color: #18191C;
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+}
+
 ConfigWindow QWidget#mainContainer {
     background-color: #111214;
     color: #F2F3F5;
-    border-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
 }
 
 ConfigWindow QCheckBox {
@@ -52,6 +70,24 @@ ConfigWindow QCheckBox {
     font-weight: 500;
     padding: 2px;
     color: #F2F3F5;
+}
+
+ConfigWindow QCheckBox::indicator {
+    background-color: #1E1F22;
+    border: 1px solid #383A40;
+    border-radius: 4px;
+    width: 14px;
+    height: 14px;
+}
+
+ConfigWindow QCheckBox::indicator:hover {
+    border: 1px solid #5865F2;
+}
+
+ConfigWindow QCheckBox::indicator:checked {
+    background-color: #5865F2;
+    border: 1px solid #5865F2;
+    image: url(:/icons/checkmark.svg); /* Adds the checkmark asset on click */
 }
 
 ConfigWindow QLabel {
@@ -111,6 +147,19 @@ ConfigWindow QPushButton#editModeBtn[editing="true"] {
     background-color: #F23F43;
 }
 
+QPushButton#btnRestartApp {
+    background-color: #F23F43;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+}
+
+QPushButton#btnRestartApp:hover {
+    background-color: #E03539;
+}
+
 ConfigWindow QSlider::groove:horizontal {
     border-radius: 4px;
     height: 8px;
@@ -130,19 +179,23 @@ ConfigWindow QScrollArea {
 }
 
 ConfigWindow QScrollBar:vertical {
-    background: #1E1F22;
-    width: 6px;
-    border-radius: 3px;
+    background: transparent; /* Removes the hard edge track */
+    width: 8px; /* Slightly thicker for usability */
+    margin: 0px;
 }
 
 ConfigWindow QScrollBar::handle:vertical {
-    background: #5865F2;
-    border-radius: 3px;
-    min-height: 20px;
+    background: #1E1F22;
+    border-radius: 4px;
+    min-height: 24px;
 }
 
 ConfigWindow QScrollBar::handle:vertical:hover {
-    background: #4752C4;
+    background: #383A40;
+}
+
+ConfigWindow QScrollBar::add-page:vertical, ConfigWindow QScrollBar::sub-page:vertical {
+    background: transparent;
 }
 
 ConfigWindow QScrollBar::add-line:vertical, ConfigWindow QScrollBar::sub-line:vertical {
@@ -159,10 +212,11 @@ BindButton {
     background-color: #1E1F22;
     border: none;
     border-radius: 8px;
-    padding: 8px;
+    padding: 10px 12px; /* Increased vertical padding to completely eliminate clipping on Windows */
     color: #F2F3F5;
     font-weight: bold;
     text-align: left;
+    min-height: 16px;
 }
 
 BindButton:checked {
