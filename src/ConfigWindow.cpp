@@ -85,30 +85,31 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
 
     auto* connLayout = new QVBoxLayout(connectionPanel);
     connLayout->setContentsMargins(20, 20, 20, 20);
+    connLayout->setSpacing(5);
 
     QLabel* connTitle = new QLabel("Connection", this);
     connTitle->setObjectName("configTitle");
     connLayout->addWidget(connTitle);
-    connLayout->addSpacing(15);
+    connLayout->addSpacing(5);
 
     connLayout->addWidget(new QLabel("LIVE STATUS", this));
     QLabel* lblStatus = new QLabel("CONNECTING...", this);
     lblStatus->setObjectName("lblLiveStatus");
     lblStatus->setStyleSheet("color: #FEE75C; font-weight: bold;");
     connLayout->addWidget(lblStatus);
-    connLayout->addSpacing(15);
+    connLayout->addSpacing(5);
 
     connLayout->addWidget(new QLabel("CONNECTED HOST", this));
     QLabel* lblActiveHost = new QLabel(settings.value("host", "127.0.0.1").toString(), this);
     lblActiveHost->setObjectName("lblActiveHost");
     connLayout->addWidget(lblActiveHost);
-    connLayout->addSpacing(15);
+    connLayout->addSpacing(5);
 
     connLayout->addWidget(new QLabel("CONNECTED PORT", this));
     QLabel* lblActivePort = new QLabel(settings.value("port", 3845).toString(), this);
     lblActivePort->setObjectName("lblActivePort");
     connLayout->addWidget(lblActivePort);
-    connLayout->addSpacing(15);
+    connLayout->addSpacing(5);
 
     connLayout->addWidget(new QLabel("LAST GIST TUNNEL", this));
     QLabel* lblActiveGist = new QLabel("None Cached", this);
@@ -123,9 +124,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     connect(btnRestart, &QPushButton::clicked, this, []() {
         QStringList args = QCoreApplication::arguments();
         args.removeFirst();
-        if (!args.contains("--config")) {
-            args.append("--config");
-        }
+        if (!args.contains("--config")) args.append("--config");
 
         QProcess::startDetached(QCoreApplication::applicationFilePath(), args);
         QCoreApplication::quit();
@@ -153,6 +152,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     headerLayout->addWidget(title);
     headerLayout->addStretch();
     headerLayout->addWidget(closeBtn);
+
     containerLayout->addLayout(headerLayout);
     containerLayout->addSpacing(5);
 
@@ -165,10 +165,14 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
 
     auto* layout = new QVBoxLayout(scrollContent);
     layout->setContentsMargins(0, 0, 8, 0);
+    layout->setSpacing(5);
 
     auto* bindsLayout = new QHBoxLayout();
+    bindsLayout->setSpacing(5);
 
     auto* col1 = new QVBoxLayout();
+    col1->setSpacing(10);
+
     col1->addWidget(new QLabel("MUTE BIND", this));
     bindMute = new BindButton(settings.value("bindMute", "Ctrl+M").toString(), this);
     connect(bindMute, &BindButton::bindChanged, this, [this](const QString& ks) {
@@ -178,6 +182,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     col1->addWidget(bindMute);
 
     auto* col2 = new QVBoxLayout();
+    col2->setSpacing(10);
     col2->addWidget(new QLabel("DEAFEN BIND", this));
     bindDeafen = new BindButton(settings.value("bindDeafen", "Ctrl+D").toString(), this);
     connect(bindDeafen, &BindButton::bindChanged, this, [this](const QString& ks) {
@@ -190,9 +195,14 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     bindsLayout->addLayout(col2);
     layout->addLayout(bindsLayout);
 
+    layout->addSpacing(10);
+
     auto* secondaryBindsLayout = new QHBoxLayout();
-    col2->addSpacing(15);
+    secondaryBindsLayout->setSpacing(5);
+
     auto* col3 = new QVBoxLayout();
+    col3->setSpacing(10);
+
     col3->addWidget(new QLabel("OPEN SETTINGS BIND", this));
     bindConfig = new BindButton(settings.value("bindConfig", "Ctrl+Shift+O").toString(), this);
     connect(bindConfig, &BindButton::bindChanged, this, [this](const QString& ks) {
@@ -202,6 +212,8 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     col3->addWidget(bindConfig);
 
     auto* col4 = new QVBoxLayout();
+    col4->setSpacing(10);
+
     col4->addWidget(new QLabel("TOGGLE OVERLAY BIND", this));
     bindToggleOverlay = new BindButton(settings.value("bindToggle", "Ctrl+Shift+T").toString(), this);
     connect(bindToggleOverlay, &BindButton::bindChanged, this, [this](const QString& ks) {
@@ -214,13 +226,13 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     secondaryBindsLayout->addLayout(col4);
     layout->addLayout(secondaryBindsLayout);
 
-    layout->addSpacing(5);
+    layout->addSpacing(10);
     btnToggleOverlay = new QPushButton("Toggle Overlay Visibility", this);
     btnToggleOverlay->setObjectName("secondaryBtn");
     connect(btnToggleOverlay, &QPushButton::clicked, this, &ConfigWindow::toggleOverlayVisibilityRequested);
     layout->addWidget(btnToggleOverlay);
 
-    layout->addSpacing(5);
+    layout->addSpacing(10);
 
     layout->addWidget(new QLabel("TCP HOST", this));
     hostInput = new QLineEdit(settings.value("host", "127.0.0.1").toString(), this);
