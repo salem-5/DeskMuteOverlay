@@ -36,6 +36,11 @@ MemberWidget::MemberWidget(const QJsonObject& data, QWidget* parent) : QFrame(pa
     layout->addWidget(nameLabel);
     layout->addStretch();
 
+    liveLabel = new QLabel("LIVE", this);
+    liveLabel->setObjectName("liveLabel");
+    liveLabel->setVisible(false);
+    layout->addWidget(liveLabel);
+
     micIcon = new AnimatedIconWidget(loadSvgData(":/icons/mic_on.svg"), loadSvgData(":/icons/mic_off.svg"), this);
     micIcon->setFixedSize(20, 20);
     layout->addWidget(micIcon);
@@ -54,16 +59,25 @@ void MemberWidget::updateData(const QJsonObject& data) {
     bool muted = data["isMuted"].toBool() || data["isServerMuted"].toBool();
     bool deafened = data["isDeafened"].toBool() || data["isServerDeafened"].toBool();
     bool speaking = data["isSpeaking"].toBool();
+    bool streaming = data["isStreaming"].toBool();
 
     if (isFirstUpdate) {
         currentMuted = muted;
         currentDeafened = deafened;
         currentSpeaking = speaking;
+        currentStreaming = streaming;
+
+        liveLabel->setVisible(streaming);
+
         speakingIntensity = speaking ? 1.0 : 0.0;
         isFirstUpdate = false;
         updateStatusIcons(muted, deafened);
         updateLabelColors();
     } else {
+        if (streaming != currentStreaming) {
+            currentStreaming = streaming;
+            liveLabel->setVisible(streaming);
+        }
         if (muted != currentMuted || deafened != currentDeafened) {
             currentMuted = muted;
             currentDeafened = deafened;
@@ -137,7 +151,6 @@ void MemberWidget::setAvatar(const QPixmap& pixmap) {
 }
 
 void MemberWidget::paintEvent(QPaintEvent* event) {
-
     QFrame::paintEvent(event);
 
     if (speakingIntensity > 0.0) {
@@ -147,7 +160,7 @@ void MemberWidget::paintEvent(QPaintEvent* event) {
         clipPath.addRoundedRect(rect(), 16, 16);
         painter.setClipPath(clipPath);
 
-        QPointF center(avatarLabel->pos().x() + avatarLabel->width() / 2.0,avatarLabel->pos().y() + avatarLabel->height() / 2.0);
+        QPointF center(avatarLabel->pos().x() + avatarLabel->width() / 2.0, avatarLabel->pos().y() + avatarLabel->height() / 2.0);
 
         QRadialGradient glowGrad(center, 80.0);
         glowGrad.setColorAt(0.0, QColor(120, 255, 205, int(70 * speakingIntensity)));
@@ -163,6 +176,7 @@ void MemberWidget::paintEvent(QPaintEvent* event) {
         painter.drawEllipse(center, 17.0, 17.0);
     }
 }
+
 void MemberWidget::animateIn() {
     setMinimumHeight(0);
     setMaximumHeight(0);

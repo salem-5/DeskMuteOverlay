@@ -32,6 +32,7 @@ private:
 
     QLabel* avatarLabel;
     QLabel* nameLabel;
+    QLabel* liveLabel;
     AnimatedIconWidget* micIcon;
     AnimatedIconWidget* deafenIcon;
 
@@ -41,5 +42,6 @@ private:
     bool currentMuted = false;
     bool currentDeafened = false;
     bool currentSpeaking = false;
+    bool currentStreaming = false;
     qreal speakingIntensity = 0.0;
 };
