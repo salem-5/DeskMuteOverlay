@@ -6,9 +6,9 @@
 #include <QLabel>
 #include <QProcess>
 
-#include "../include/DiscordClient.h"
-#include "../include/OverlayWindow.h"
-#include "../include/ConfigWindow.h"
+#include "DiscordClient.h"
+#include "OverlayWindow.h"
+#include "ConfigWindow.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>

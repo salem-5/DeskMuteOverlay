@@ -25,10 +25,16 @@ add_executable(DeskMuteOverlay MACOSX_BUNDLE WIN32
         src/MemberWidget.cpp
         src/OverlayWindow.cpp
         src/ConfigWindow.cpp
+        src/BindButton.cpp
+        src/ScrollEater.cpp
+        src/AnimatedIconWidget.cpp
         include/DiscordClient.h
         include/MemberWidget.h
         include/OverlayWindow.h
         include/ConfigWindow.h
+        include/BindButton.h
+        include/ScrollEater.h
+        include/AnimatedIconWidget.h
         resources/resources.qrc
 )
 

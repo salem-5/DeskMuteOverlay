@@ -9,42 +9,19 @@
 #include <QSlider>
 #include <QSettings>
 #include <QPoint>
-#include <QKeyEvent>
-#include <QMouseEvent>
 #include <QTimer>
 #include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QUrl>
-class ScrollEater : public QObject {
-public:
-    explicit ScrollEater(QObject* parent = nullptr) : QObject(parent) {}
-protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
-};
-
-class BindButton : public QPushButton {
-    Q_OBJECT
-public:
-    explicit BindButton(const QString& currentBind, QWidget* parent = nullptr);
-    QString currentBindStr;
-
-signals:
-    void bindChanged(const QString& newBind);
-
-protected:
-    void keyPressEvent(QKeyEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-};
+#include "BindButton.h"
 
 class ConfigWindow : public QWidget {
     Q_OBJECT
 public:
     explicit ConfigWindow(QWidget* parent = nullptr);
 
-signals:
-    void toggleEditMode(bool editing);
+    signals:
+        void toggleEditMode(bool editing);
     void hideChannelNameChanged(bool hidden);
     void requireVcForHotkeysChanged(bool require);
     void connectionSettingsChanged(const QString& host, int port);
