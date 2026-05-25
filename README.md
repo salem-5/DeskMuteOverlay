@@ -8,14 +8,11 @@ This project was built to solve a very specific personal problem and likely will
 
 ## Screenshots
 
-<p align="center">
-  <img src="resources/screenshots/overlay.png" alt="Overlay View" width="300"/>
-</p>
+## Screenshots
 
-<p align="center">
-  <img src="resources/screenshots/settings.png" alt="Settings View" width="320"/>
-</p>
-
+| Overlay View | Settings View |
+| :---: | :---: |
+| <img src="resources/screenshots/overlay.png" alt="Overlay View" height="300"/> | <img src="resources/screenshots/settings.png" alt="Settings View" height="300"/> |
 ---
 
 ## Requirements
