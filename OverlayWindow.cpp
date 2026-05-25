@@ -48,7 +48,6 @@ void OverlayWindow::resizeEvent(QResizeEvent* event) {
     QMainWindow::resizeEvent(event);
 }
 
-// FIXED: Uses native window opacity to prevent layout engine crashes
 void OverlayWindow::setOverlayOpacity(qreal opacity) {
     setWindowOpacity(opacity);
 }
@@ -68,11 +67,26 @@ void OverlayWindow::setupTrayIcon() {
     trayIcon = new QSystemTrayIcon(QIcon(trayPix), this);
 
     QMenu* trayMenu = new QMenu(this);
+    toggleVisibilityAction = trayMenu->addAction("Hide Overlay", this, &OverlayWindow::toggleVisibility);
+    trayMenu->addAction("Reload from Gist", this, [this]() {
+        emit reloadGistRequested();
+    });
+    trayMenu->addSeparator();
     trayMenu->addAction("Settings", this, &OverlayWindow::openSettingsRequested);
     trayMenu->addAction("Quit DeskMute", qApp, &QCoreApplication::quit);
 
     trayIcon->setContextMenu(trayMenu);
     trayIcon->show();
+}
+
+void OverlayWindow::toggleVisibility() {
+    if (isVisible()) {
+        hide();
+        if (toggleVisibilityAction) toggleVisibilityAction->setText("Show Overlay");
+    } else {
+        show();
+        if (toggleVisibilityAction) toggleVisibilityAction->setText("Hide Overlay");
+    }
 }
 
 bool OverlayWindow::canUseHotkeys() const {
@@ -152,7 +166,6 @@ void OverlayWindow::showDisconnected() {
     currentlyInVc = false;
     channelTitle->setText("DISCONNECTED");
 
-    // Smoothly animate everyone out of existence instead of instantly wiping them
     for (auto* widget : activeWidgets.values()) {
         widget->animateOut();
     }
@@ -184,7 +197,7 @@ void OverlayWindow::updateState(const QJsonObject& state) {
             MemberWidget* widget = new MemberWidget(m, this);
             listLayout->insertWidget(listLayout->count() - 1, widget);
             activeWidgets.insert(id, widget);
-            widget->animateIn(); // Start the pop-in animation!
+            widget->animateIn();
         }
 
         QString url = m["avatarUrl"].toString();
@@ -200,8 +213,6 @@ void OverlayWindow::updateState(const QJsonObject& state) {
         }
     }
 
-    // SMART REORDERING: Only remove/insert if the index is actually wrong
-    // This prevents layout thrashing which ruins smooth animations
     int expectedIndex = 0;
     if (activeWidgets.contains(selfId)) {
         if (listLayout->indexOf(activeWidgets[selfId]) != expectedIndex) {
@@ -220,12 +231,11 @@ void OverlayWindow::updateState(const QJsonObject& state) {
         expectedIndex++;
     }
 
-    // Cleanup users who left smoothly
     auto it = activeWidgets.begin();
     while (it != activeWidgets.end()) {
         if (!currentMembers.contains(it.key())) {
             MemberWidget* w = it.value();
-            w->animateOut(); // Will auto-delete when done shrinking
+            w->animateOut();
             it = activeWidgets.erase(it);
         } else {
             ++it;
@@ -241,7 +251,7 @@ void OverlayWindow::loadAvatar(const QString& memberId, const QString& url) {
         if (reply->error() == QNetworkReply::NoError) {
             QPixmap pix;
             if (pix.loadFromData(reply->readAll())) {
-                avatarCache.insert(url, pix); // Keep caching under the original URL string
+                avatarCache.insert(url, pix);
                 if (activeWidgets.contains(memberId) && activeWidgets[memberId]->avatarUrl == url) {
                     activeWidgets[memberId]->setAvatar(pix);
                 }

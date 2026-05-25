@@ -70,7 +70,7 @@ void BindButton::mousePressEvent(QMouseEvent* event) {
 }
 
 /* ===================== GIST FETCH MEMBER FUNCTION ===================== */
-void ConfigWindow::fetchGistTunnel() {
+void ConfigWindow::fetchGistTunnel(bool force) {
     QString id = gistIdInput->text();
     QString pat = patInput->text();
 
@@ -83,7 +83,7 @@ void ConfigWindow::fetchGistTunnel() {
 
     QNetworkReply* reply = net.get(req);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, force]() {
         QByteArray data = reply->readAll();
         reply->deleteLater();
 
@@ -95,7 +95,7 @@ void ConfigWindow::fetchGistTunnel() {
         QString content = file["content"].toString().trimmed();
         content = content.replace("tcp://", "");
 
-        if (content.isEmpty() || content == lastTunnel)
+        if (content.isEmpty() || (!force && content == lastTunnel))
             return;
 
         lastTunnel = content;
@@ -104,14 +104,23 @@ void ConfigWindow::fetchGistTunnel() {
         if (parts.size() != 2)
             return;
 
-        emit connectionSettingsChanged(parts[0], parts[1].toInt());
+        QString host = parts[0];
+        int port = parts[1].toInt();
+
+        hostInput->setText(host);
+        portInput->setValue(port);
+
+        QSettings().setValue("host", host);
+        QSettings().setValue("port", port);
+
+        emit connectionSettingsChanged(host, port);
     });
 }
 
 ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
-    resize(320, 520);
+    resize(320, 560);
 
     QWidget* container = new QWidget(this);
     container->setStyleSheet("QWidget { background-color: #111214; color: #F2F3F5; border-radius: 16px; } "
@@ -190,13 +199,35 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     bindsLayout->addLayout(col2);
     layout->addLayout(bindsLayout);
 
-    layout->addWidget(new QLabel("OPEN SETTINGS BIND", this));
+    auto* secondaryBindsLayout = new QHBoxLayout();
+
+    auto* col3 = new QVBoxLayout();
+    col3->addWidget(new QLabel("OPEN SETTINGS BIND", this));
     bindConfig = new BindButton(settings.value("bindConfig", "Ctrl+Shift+O").toString(), this);
     connect(bindConfig, &BindButton::bindChanged, this, [this](const QString& ks) {
         QSettings().setValue("bindConfig", ks);
         emit configKeyChanged(ks);
     });
-    layout->addWidget(bindConfig);
+    col3->addWidget(bindConfig);
+
+    auto* col4 = new QVBoxLayout();
+    col4->addWidget(new QLabel("TOGGLE OVERLAY BIND", this));
+    bindToggleOverlay = new BindButton(settings.value("bindToggle", "Ctrl+Shift+T").toString(), this);
+    connect(bindToggleOverlay, &BindButton::bindChanged, this, [this](const QString& ks) {
+        QSettings().setValue("bindToggle", ks);
+        emit overlayToggleKeyChanged(ks);
+    });
+    col4->addWidget(bindToggleOverlay);
+
+    secondaryBindsLayout->addLayout(col3);
+    secondaryBindsLayout->addLayout(col4);
+    layout->addLayout(secondaryBindsLayout);
+
+    layout->addSpacing(5);
+    btnToggleOverlay = new QPushButton("Toggle Overlay Visibility", this);
+    btnToggleOverlay->setStyleSheet("background-color: #2B2D31;");
+    connect(btnToggleOverlay, &QPushButton::clicked, this, &ConfigWindow::toggleOverlayVisibilityRequested);
+    layout->addWidget(btnToggleOverlay);
 
     layout->addSpacing(5);
 
@@ -251,11 +282,13 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     gistTimer->setInterval(5 * 60 * 1000);
     gistTimer->start();
 
-    connect(btnLoadGist, &QPushButton::clicked, this, &ConfigWindow::fetchGistTunnel);
+    connect(btnLoadGist, &QPushButton::clicked, this, [this]() {
+        fetchGistTunnel(true);
+    });
 
     connect(gistTimer, &QTimer::timeout, this, [this]() {
         if (chkAutoRefresh->isChecked())
-            fetchGistTunnel();
+            fetchGistTunnel(false);
     });
 
     layout->addSpacing(10);
@@ -309,7 +342,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
 
     // Startup Check: If both Gist parameters are in use, pull instantly
     if (!gistIdInput->text().isEmpty() && !patInput->text().isEmpty()) {
-        fetchGistTunnel();
+        fetchGistTunnel(false);
     }
 }
 

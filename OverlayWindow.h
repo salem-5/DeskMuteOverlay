@@ -18,6 +18,7 @@ public:
 
     signals:
         void openSettingsRequested();
+    void reloadGistRequested();
 
 public slots:
     void updateState(const QJsonObject& state);
@@ -27,6 +28,7 @@ public slots:
     void setRequireVcForHotkeys(bool require);
     void setConfigActive(bool active);
     void setOverlayOpacity(qreal opacity);
+    void toggleVisibility();
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -46,6 +48,7 @@ private:
     QNetworkAccessManager* networkManager;
     QSystemTrayIcon* trayIcon;
     QSizeGrip* sizeGrip;
+    QAction* toggleVisibilityAction;
 
     bool isEditMode = false;
     bool isConfigActive = false;

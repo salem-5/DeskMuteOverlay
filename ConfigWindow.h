@@ -48,17 +48,19 @@ signals:
     void muteKeyChanged(const QString& sequence);
     void deafenKeyChanged(const QString& sequence);
     void configKeyChanged(const QString& sequence);
+    void overlayToggleKeyChanged(const QString& sequence);
+    void toggleOverlayVisibilityRequested();
 
     void tunnelUpdated(const QString& host, int port);
+
+public slots:
+    void fetchGistTunnel(bool force = false);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
-
-private:
-    void fetchGistTunnel();
 
 private:
     QPushButton* btnEditMode;
@@ -74,6 +76,8 @@ private:
     BindButton* bindMute;
     BindButton* bindDeafen;
     BindButton* bindConfig;
+    BindButton* bindToggleOverlay;
+    QPushButton* btnToggleOverlay;
 
     // GitHub / Gist UI
     QLineEdit* gistIdInput;

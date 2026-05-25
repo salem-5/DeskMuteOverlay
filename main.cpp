@@ -57,6 +57,10 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&config, &ConfigWindow::configVisibleChanged, &overlay, &OverlayWindow::setConfigActive);
     QObject::connect(&config, &ConfigWindow::opacityChanged, &overlay, &OverlayWindow::setOverlayOpacity);
+    QObject::connect(&config, &ConfigWindow::toggleOverlayVisibilityRequested, &overlay, &OverlayWindow::toggleVisibility);
+    QObject::connect(&overlay, &OverlayWindow::reloadGistRequested, &config, [&config]() {
+        config.fetchGistTunnel(true);
+    });
 
     auto showConfig = [&config]() {
         if (config.isVisible()) {
@@ -72,6 +76,8 @@ int main(int argc, char *argv[]) {
     QString muteSeq = settings.value("bindMute", "Ctrl+M").toString();
     QString deafenSeq = settings.value("bindDeafen", "Ctrl+D").toString();
     QString configSeq = settings.value("bindConfig", "Ctrl+Shift+D").toString();
+    QString toggleSeq = settings.value("bindToggle", "Ctrl+Shift+T").toString();
+
     auto getValidSeq = [](const QString& seq) {
         return seq.startsWith("Mouse") ? QKeySequence() : QKeySequence(seq);
     };
@@ -89,6 +95,9 @@ int main(int argc, char *argv[]) {
     QHotkey* shortcutConfig = new QHotkey(getValidSeq(configSeq), true, &app);
     QObject::connect(shortcutConfig, &QHotkey::activated, showConfig);
 
+    QHotkey* shortcutToggle = new QHotkey(getValidSeq(toggleSeq), true, &app);
+    QObject::connect(shortcutToggle, &QHotkey::activated, &overlay, &OverlayWindow::toggleVisibility);
+
     QObject::connect(&config, &ConfigWindow::muteKeyChanged, [&](const QString& seq) {
         muteSeq = seq;
         shortcutMute->setShortcut(getValidSeq(seq), true);
@@ -101,6 +110,10 @@ int main(int argc, char *argv[]) {
         configSeq = seq;
         shortcutConfig->setShortcut(getValidSeq(seq), true);
     });
+    QObject::connect(&config, &ConfigWindow::overlayToggleKeyChanged, [&](const QString& seq) {
+        toggleSeq = seq;
+        shortcutToggle->setShortcut(getValidSeq(seq), true);
+    });
 
 #ifdef Q_OS_WIN
     mouseCallback = [&](int btn) {
@@ -108,6 +121,7 @@ int main(int argc, char *argv[]) {
         if (muteSeq == mStr && overlay.canUseHotkeys()) client.sendAction("mute");
         if (deafenSeq == mStr && overlay.canUseHotkeys()) client.sendAction("deafen");
         if (configSeq == mStr) showConfig();
+        if (toggleSeq == mStr) overlay.toggleVisibility();
     };
     mouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, GetModuleHandle(NULL), 0);
     QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {
