@@ -21,6 +21,7 @@ include_directories(include)
 
 add_executable(DeskMuteOverlay MACOSX_BUNDLE WIN32
         src/main.cpp
+        src/AppController.cpp
         src/DiscordClient.cpp
         src/MemberWidget.cpp
         src/OverlayWindow.cpp
@@ -28,6 +29,7 @@ add_executable(DeskMuteOverlay MACOSX_BUNDLE WIN32
         src/BindButton.cpp
         src/ScrollEater.cpp
         src/AnimatedIconWidget.cpp
+        include/AppController.h
         include/DiscordClient.h
         include/MemberWidget.h
         include/OverlayWindow.h
