@@ -17,12 +17,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(qhotkey)
 
+include_directories(include)
+
 add_executable(DeskMuteOverlay MACOSX_BUNDLE WIN32
-        main.cpp
-        DiscordClient.h DiscordClient.cpp
-        MemberWidget.h MemberWidget.cpp
-        OverlayWindow.h OverlayWindow.cpp
-        ConfigWindow.h ConfigWindow.cpp
+        src/main.cpp
+        src/DiscordClient.cpp
+        src/MemberWidget.cpp
+        src/OverlayWindow.cpp
+        src/ConfigWindow.cpp
+        include/DiscordClient.h
+        include/MemberWidget.h
+        include/OverlayWindow.h
+        include/ConfigWindow.h
+        resources/resources.qrc
 )
 
 set_target_properties(DeskMuteOverlay PROPERTIES

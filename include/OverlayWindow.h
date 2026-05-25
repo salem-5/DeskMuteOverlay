@@ -58,4 +58,4 @@ private:
     QPoint dragPosition;
 };
 
-#endif // OVERLAYWINDOW_H
+#endif

@@ -9,7 +9,6 @@
 #include <QPropertyAnimation>
 #include <QSvgRenderer>
 
-// Custom widget to handle animated cross-fading and scaling of SVGs
 class AnimatedIconWidget : public QWidget {
     Q_OBJECT
     Q_PROPERTY(qreal progress READ progress WRITE setProgress)
@@ -48,7 +47,7 @@ public:
 private:
     void updateStatusIcons(bool muted, bool deafened);
     void animateStateChange(bool muted, bool deafened);
-    void redrawAvatar(); // Handles the avatar and the green speaking ring
+    void redrawAvatar();
 
     QLabel* avatarLabel;
     QLabel* nameLabel;
@@ -62,7 +61,7 @@ private:
     bool isFirstUpdate = true;
     bool currentMuted = false;
     bool currentDeafened = false;
-    bool currentSpeaking = false; // Tracks speaking status
+    bool currentSpeaking = false;
 };
 
-#endif // MEMBERWIDGET_H
+#endif

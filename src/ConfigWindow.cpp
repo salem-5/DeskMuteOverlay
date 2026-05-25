@@ -6,8 +6,8 @@
 #include <QHideEvent>
 #include <QKeySequence>
 #include <QScrollArea>
+#include <QStyle>
 
-// Network & JSON Libraries
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -20,9 +20,6 @@ BindButton::BindButton(const QString& currentBind, QWidget* parent) : QPushButto
     currentBindStr = currentBind;
     setCheckable(true);
     setFocusPolicy(Qt::StrongFocus);
-    setStyleSheet("BindButton { background-color: #1E1F22; border: none; border-radius: 8px; padding: 8px; color: #F2F3F5; font-weight: bold; text-align: left; } "
-                  "BindButton:checked { background-color: #383A40; color: #FFFFFF; } "
-                  "BindButton:hover { background-color: #2B2D31; }");
 
     connect(this, &QPushButton::toggled, this, [this](bool checked) {
         setText(checked ? "Listening (Press Key or Mouse 4/5)..." : currentBindStr);
@@ -69,7 +66,6 @@ void BindButton::mousePressEvent(QMouseEvent* event) {
     }
 }
 
-/* ===================== GIST FETCH MEMBER FUNCTION ===================== */
 void ConfigWindow::fetchGistTunnel(bool force) {
     QString id = gistIdInput->text();
     QString pat = patInput->text();
@@ -120,17 +116,10 @@ void ConfigWindow::fetchGistTunnel(bool force) {
 ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
-    resize(320, 560);
+    resize(380, 660);
 
     QWidget* container = new QWidget(this);
-    container->setStyleSheet("QWidget { background-color: #111214; color: #F2F3F5; border-radius: 16px; } "
-                             "QCheckBox { font-size: 13px; font-weight: 500; padding: 2px; } "
-                             "QLabel { font-size: 11px; font-weight: bold; color: #80848E; } "
-                             "QLineEdit, QSpinBox { background-color: #1E1F22; border: none; border-radius: 8px; padding: 8px; color: #F2F3F5; font-weight: bold; } "
-                             "QPushButton { background-color: #5865F2; border: none; padding: 10px; border-radius: 8px; font-weight: bold; color: white; } "
-                             "QPushButton:hover { background-color: #4752C4; } "
-                             "QSlider::groove:horizontal { border-radius: 4px; height: 8px; background: #1E1F22; } "
-                             "QSlider::handle:horizontal { background: #5865F2; width: 16px; margin: -4px 0; border-radius: 8px; }");
+    container->setObjectName("mainContainer");
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -139,15 +128,13 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     auto* containerLayout = new QVBoxLayout(container);
     containerLayout->setContentsMargins(20, 20, 20, 20);
 
-    // Header remains fixed at the top
     auto* headerLayout = new QHBoxLayout();
     QLabel* title = new QLabel("Overlay Settings", this);
-    title->setStyleSheet("font-size: 15px; color: #FFFFFF; background: transparent;");
+    title->setObjectName("configTitle");
 
     QPushButton* closeBtn = new QPushButton("✕", this);
+    closeBtn->setObjectName("configCloseBtn");
     closeBtn->setFixedSize(26, 26);
-    closeBtn->setStyleSheet("QPushButton { background-color: transparent; color: #80848E; font-size: 16px; padding: 0px; } "
-                            "QPushButton:hover { color: #F23F43; }");
     connect(closeBtn, &QPushButton::clicked, this, &QWidget::hide);
 
     headerLayout->addWidget(title);
@@ -156,19 +143,12 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     containerLayout->addLayout(headerLayout);
     containerLayout->addSpacing(5);
 
-    // Setup Scroll Area for settings body
     QScrollArea* scrollArea = new QScrollArea(container);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setStyleSheet("QScrollArea { background: transparent; border: none; }"
-                              "QScrollBar:vertical { background: #1E1F22; width: 6px; border-radius: 3px; }"
-                              "QScrollBar::handle:vertical { background: #5865F2; border-radius: 3px; min-height: 20px; }"
-                              "QScrollBar::handle:vertical:hover { background: #4752C4; }"
-                              "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { background: none; height: 0px; }");
 
     QWidget* scrollContent = new QWidget(scrollArea);
     scrollContent->setObjectName("scrollContent");
-    scrollContent->setStyleSheet("QWidget#scrollContent { background: transparent; }");
 
     auto* layout = new QVBoxLayout(scrollContent);
     layout->setContentsMargins(0, 0, 8, 0);
@@ -225,7 +205,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
 
     layout->addSpacing(5);
     btnToggleOverlay = new QPushButton("Toggle Overlay Visibility", this);
-    btnToggleOverlay->setStyleSheet("background-color: #2B2D31;");
+    btnToggleOverlay->setObjectName("secondaryBtn");
     connect(btnToggleOverlay, &QPushButton::clicked, this, &ConfigWindow::toggleOverlayVisibilityRequested);
     layout->addWidget(btnToggleOverlay);
 
@@ -243,7 +223,7 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     layout->addWidget(portInput);
 
     btnApplyNetwork = new QPushButton("Apply Connection", this);
-    btnApplyNetwork->setStyleSheet("background-color: #2B2D31;");
+    btnApplyNetwork->setObjectName("secondaryBtn");
     connect(btnApplyNetwork, &QPushButton::clicked, this, [this]() {
         QSettings().setValue("host", hostInput->text());
         QSettings().setValue("port", portInput->value());
@@ -251,7 +231,6 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     });
     layout->addWidget(btnApplyNetwork);
 
-    /* ===================== GIST UI & SAVING ===================== */
     layout->addSpacing(10);
     layout->addWidget(new QLabel("GITHUB GIST ID", this));
     gistIdInput = new QLineEdit(settings.value("gistId", "").toString(), this);
@@ -324,12 +303,15 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     layout->addStretch();
 
     btnEditMode = new QPushButton("Unlock Overlay Position", this);
+    btnEditMode->setObjectName("editModeBtn");
     layout->addWidget(btnEditMode);
 
     connect(btnEditMode, &QPushButton::clicked, this, [this]() {
         isEditing = !isEditing;
         btnEditMode->setText(isEditing ? "Lock Overlay Position" : "Unlock Overlay Position");
-        btnEditMode->setStyleSheet(isEditing ? "background-color: #F23F43;" : "background-color: #5865F2;");
+        btnEditMode->setProperty("editing", isEditing);
+        btnEditMode->style()->unpolish(btnEditMode);
+        btnEditMode->style()->polish(btnEditMode);
         emit toggleEditMode(isEditing);
     });
 
@@ -340,7 +322,6 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     emit requireVcForHotkeysChanged(chkRequireVc->isChecked());
     emit opacityChanged(opacitySlider->value() / 100.0);
 
-    // Startup Check: If both Gist parameters are in use, pull instantly
     if (!gistIdInput->text().isEmpty() && !patInput->text().isEmpty()) {
         fetchGistTunnel(false);
     }
@@ -352,21 +333,26 @@ void ConfigWindow::mousePressEvent(QMouseEvent* event) {
         event->accept();
     }
 }
+
 void ConfigWindow::mouseMoveEvent(QMouseEvent* event) {
     if (event->buttons() & Qt::LeftButton) {
         move(event->globalPosition().toPoint() - dragPosition);
         event->accept();
     }
 }
+
 void ConfigWindow::showEvent(QShowEvent* event) {
     emit configVisibleChanged(true);
     QWidget::showEvent(event);
 }
+
 void ConfigWindow::hideEvent(QHideEvent* event) {
     if (isEditing) {
         isEditing = false;
         btnEditMode->setText("Unlock Overlay Position");
-        btnEditMode->setStyleSheet("background-color: #5865F2;");
+        btnEditMode->setProperty("editing", false);
+        btnEditMode->style()->unpolish(btnEditMode);
+        btnEditMode->style()->polish(btnEditMode);
         emit toggleEditMode(false);
     }
     emit configVisibleChanged(false);

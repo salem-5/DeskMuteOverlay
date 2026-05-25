@@ -2,9 +2,11 @@
 #include <QHotkey>
 #include <QSettings>
 #include <functional>
-#include "DiscordClient.h"
-#include "OverlayWindow.h"
-#include "ConfigWindow.h"
+#include <QFile>
+
+#include "../include/DiscordClient.h"
+#include "../include/OverlayWindow.h"
+#include "../include/ConfigWindow.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -15,8 +17,8 @@ LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0 && wParam == WM_XBUTTONDOWN) {
         MSLLHOOKSTRUCT* hookStruct = (MSLLHOOKSTRUCT*)lParam;
         int button = HIWORD(hookStruct->mouseData);
-        if (button == 1 && mouseCallback) mouseCallback(4); // Mouse 4
-        else if (button == 2 && mouseCallback) mouseCallback(5); // Mouse 5
+        if (button == 1 && mouseCallback) mouseCallback(4);
+        else if (button == 2 && mouseCallback) mouseCallback(5);
     }
     return CallNextHookEx(mouseHook, nCode, wParam, lParam);
 }
@@ -34,8 +36,13 @@ int main(int argc, char *argv[]) {
     ConfigWindow config;
 
     QSettings settings;
-
-    // Check if Gist credentials exist. If they do, ignore static configuration fields on startup.
+    QFile styleFile(":/style.qss");
+    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        app.setStyleSheet(styleFile.readAll());
+        styleFile.close();
+    } else {
+        qDebug() << "Warning: Failed to load style.qss from resources!";
+    }
     QString gistId = settings.value("gistId", "").toString();
     QString githubPat = settings.value("githubPat", "").toString();
 

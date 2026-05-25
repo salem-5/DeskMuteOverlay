@@ -1,0 +1,175 @@
+/* ================= MemberWidget ================= */
+MemberWidget {
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 16px;
+}
+
+MemberWidget QLabel#nameLabel {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* ================= OverlayWindow ================= */
+QLabel#channelTitle {
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 13px;
+    background: transparent;
+    padding-left: 5px;
+}
+
+QSizeGrip#sizeGrip {
+    background-color: #5865F2;
+    border-radius: 8px;
+}
+
+QWidget#OverlayContainer[containerState="edit"] {
+    background-color: rgba(0, 0, 0, 0.6);
+    border: 2px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+}
+
+QWidget#OverlayContainer[containerState="config"] {
+    background-color: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 12px;
+}
+
+QWidget#OverlayContainer[containerState="normal"] {
+    background-color: transparent;
+    border: none;
+}
+
+/* ================= ConfigWindow ================= */
+ConfigWindow QWidget#mainContainer {
+    background-color: #111214;
+    color: #F2F3F5;
+    border-radius: 16px;
+}
+
+ConfigWindow QCheckBox {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 2px;
+    color: #F2F3F5;
+}
+
+ConfigWindow QLabel {
+    font-size: 11px;
+    font-weight: bold;
+    color: #80848E;
+}
+
+ConfigWindow QLabel#configTitle {
+    font-size: 15px;
+    color: #FFFFFF;
+    background: transparent;
+}
+
+ConfigWindow QLineEdit, ConfigWindow QSpinBox {
+    background-color: #1E1F22;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    color: #F2F3F5;
+    font-weight: bold;
+}
+
+ConfigWindow QPushButton {
+    background-color: #5865F2;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+}
+
+ConfigWindow QPushButton:hover {
+    background-color: #4752C4;
+}
+
+ConfigWindow QPushButton#configCloseBtn {
+    background-color: transparent;
+    color: #80848E;
+    font-size: 16px;
+    padding: 0px;
+}
+
+ConfigWindow QPushButton#configCloseBtn:hover {
+    color: #F23F43;
+}
+
+ConfigWindow QPushButton#secondaryBtn {
+    background-color: #2B2D31;
+}
+
+ConfigWindow QPushButton#secondaryBtn:hover {
+    background-color: #383A40;
+}
+
+ConfigWindow QPushButton#editModeBtn[editing="true"] {
+    background-color: #F23F43;
+}
+
+ConfigWindow QSlider::groove:horizontal {
+    border-radius: 4px;
+    height: 8px;
+    background: #1E1F22;
+}
+
+ConfigWindow QSlider::handle:horizontal {
+    background: #5865F2;
+    width: 16px;
+    margin: -4px 0;
+    border-radius: 8px;
+}
+
+ConfigWindow QScrollArea {
+    background: transparent;
+    border: none;
+}
+
+ConfigWindow QScrollBar:vertical {
+    background: #1E1F22;
+    width: 6px;
+    border-radius: 3px;
+}
+
+ConfigWindow QScrollBar::handle:vertical {
+    background: #5865F2;
+    border-radius: 3px;
+    min-height: 20px;
+}
+
+ConfigWindow QScrollBar::handle:vertical:hover {
+    background: #4752C4;
+}
+
+ConfigWindow QScrollBar::add-line:vertical, ConfigWindow QScrollBar::sub-line:vertical {
+    background: none;
+    height: 0px;
+}
+
+QWidget#scrollContent {
+    background: transparent;
+}
+
+/* ================= BindButton ================= */
+BindButton {
+    background-color: #1E1F22;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    color: #F2F3F5;
+    font-weight: bold;
+    text-align: left;
+}
+
+BindButton:checked {
+    background-color: #383A40;
+    color: #FFFFFF;
+}
+
+BindButton:hover {
+    background-color: #2B2D31;
+}

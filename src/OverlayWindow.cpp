@@ -9,6 +9,7 @@
 #include <QMenu>
 #include <QDebug>
 #include <QApplication>
+#include <QStyle>
 
 OverlayWindow::OverlayWindow(QWidget* parent) : QMainWindow(parent), networkManager(new QNetworkAccessManager(this)) {
     setWindowFlags(Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::WindowTransparentForInput);
@@ -26,7 +27,7 @@ OverlayWindow::OverlayWindow(QWidget* parent) : QMainWindow(parent), networkMana
     mainLayout->setContentsMargins(10, 10, 10, 10);
 
     channelTitle = new QLabel("CONNECTING...", this);
-    channelTitle->setStyleSheet("color: #FFFFFF; font-weight: bold; font-size: 13px; background: transparent; padding-left: 5px;");
+    channelTitle->setObjectName("channelTitle");
     mainLayout->addWidget(channelTitle);
 
     listLayout = new QVBoxLayout();
@@ -35,8 +36,8 @@ OverlayWindow::OverlayWindow(QWidget* parent) : QMainWindow(parent), networkMana
     mainLayout->addLayout(listLayout);
 
     sizeGrip = new QSizeGrip(this);
+    sizeGrip->setObjectName("sizeGrip");
     sizeGrip->setFixedSize(16, 16);
-    sizeGrip->setStyleSheet("background-color: #5865F2; border-radius: 8px;");
     sizeGrip->hide();
 
     setupTrayIcon();
@@ -126,24 +127,14 @@ void OverlayWindow::setEditMode(bool enabled) {
 
 void OverlayWindow::updateContainerStyle() {
     if (isEditMode) {
-        centralWidget()->setStyleSheet(
-            "#OverlayContainer { "
-            "   background-color: rgba(0, 0, 0, 0.6); "
-            "   border: 2px dashed rgba(255, 255, 255, 0.4); "
-            "   border-radius: 12px; "
-            "}"
-        );
+        centralWidget()->setProperty("containerState", "edit");
     } else if (isConfigActive) {
-        centralWidget()->setStyleSheet(
-            "#OverlayContainer { "
-            "   background-color: rgba(0, 0, 0, 0.4); "
-            "   border: none; "
-            "   border-radius: 12px; "
-            "}"
-        );
+        centralWidget()->setProperty("containerState", "config");
     } else {
-        centralWidget()->setStyleSheet("#OverlayContainer { background-color: transparent; border: none; }");
+        centralWidget()->setProperty("containerState", "normal");
     }
+    centralWidget()->style()->unpolish(centralWidget());
+    centralWidget()->style()->polish(centralWidget());
 }
 
 void OverlayWindow::mousePressEvent(QMouseEvent* event) {
@@ -152,12 +143,14 @@ void OverlayWindow::mousePressEvent(QMouseEvent* event) {
         event->accept();
     }
 }
+
 void OverlayWindow::mouseMoveEvent(QMouseEvent* event) {
     if (isEditMode && event->buttons() & Qt::LeftButton) {
         move(event->globalPosition().toPoint() - dragPosition);
         event->accept();
     }
 }
+
 void OverlayWindow::mouseReleaseEvent(QMouseEvent* event) {
     QMainWindow::mouseReleaseEvent(event);
 }
@@ -242,6 +235,7 @@ void OverlayWindow::updateState(const QJsonObject& state) {
         }
     }
 }
+
 void OverlayWindow::loadAvatar(const QString& memberId, const QString& url) {
     QString safeUrl = url;
     safeUrl.replace(".webp", ".png");

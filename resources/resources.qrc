@@ -1,0 +1,10 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>style.qss</file>
+        <file>icons/mic_on.svg</file>
+        <file>icons/mic_off.svg</file>
+        <file>icons/headset_on.svg</file>
+        <file>icons/headset_off.svg</file>
+    </qresource>
+</RCC>

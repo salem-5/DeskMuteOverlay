@@ -79,7 +79,6 @@ private:
     BindButton* bindToggleOverlay;
     QPushButton* btnToggleOverlay;
 
-    // GitHub / Gist UI
     QLineEdit* gistIdInput;
     QLineEdit* patInput;
     QPushButton* btnLoadGist;
