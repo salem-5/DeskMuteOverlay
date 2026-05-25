@@ -34,7 +34,14 @@ int main(int argc, char *argv[]) {
     ConfigWindow config;
 
     QSettings settings;
-    client.setConnectionDetails(settings.value("host", "127.0.0.1").toString(), settings.value("port", 3845).toInt());
+
+    // Check if Gist credentials exist. If they do, ignore static configuration fields on startup.
+    QString gistId = settings.value("gistId", "").toString();
+    QString githubPat = settings.value("githubPat", "").toString();
+
+    if (gistId.isEmpty() || githubPat.isEmpty()) {
+        client.setConnectionDetails(settings.value("host", "127.0.0.1").toString(), settings.value("port", 3845).toInt());
+    }
 
     overlay.setOverlayOpacity(settings.value("opacity", 90).toInt() / 100.0);
     overlay.setHideChannelName(settings.value("hideName", false).toBool());

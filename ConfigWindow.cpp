@@ -5,6 +5,16 @@
 #include <QShowEvent>
 #include <QHideEvent>
 #include <QKeySequence>
+#include <QScrollArea>
+
+// Network & JSON Libraries
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTimer>
+#include <QUrl>
 
 BindButton::BindButton(const QString& currentBind, QWidget* parent) : QPushButton(currentBind, parent) {
     currentBindStr = currentBind;
@@ -29,7 +39,7 @@ void BindButton::keyPressEvent(QKeyEvent* event) {
         return;
     }
     int key = event->key();
-    // Ignore stand-alone modifier presses until combined with a main key
+
     if (key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta) {
         return;
     }
@@ -45,7 +55,7 @@ void BindButton::mousePressEvent(QMouseEvent* event) {
         QPushButton::mousePressEvent(event);
         return;
     }
-    // Handle specific Extra Mouse Buttons (4 and 5)
+
     if (event->button() == Qt::BackButton || event->button() == Qt::ExtraButton1) {
         currentBindStr = "Mouse 4";
         setChecked(false);
@@ -55,11 +65,48 @@ void BindButton::mousePressEvent(QMouseEvent* event) {
         setChecked(false);
         emit bindChanged(currentBindStr);
     } else if (event->button() == Qt::LeftButton || event->button() == Qt::RightButton) {
-        // Cancel binding if they just left/right click
         setChecked(false);
     }
 }
 
+/* ===================== GIST FETCH MEMBER FUNCTION ===================== */
+void ConfigWindow::fetchGistTunnel() {
+    QString id = gistIdInput->text();
+    QString pat = patInput->text();
+
+    if (id.isEmpty() || pat.isEmpty())
+        return;
+
+    QNetworkRequest req(QUrl("https://api.github.com/gists/" + id));
+    req.setRawHeader("Authorization", ("Bearer " + pat).toUtf8());
+    req.setRawHeader("Accept", "application/vnd.github+json");
+
+    QNetworkReply* reply = net.get(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        QByteArray data = reply->readAll();
+        reply->deleteLater();
+
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        auto files = doc.object()["files"].toObject();
+        if (files.isEmpty()) return;
+        auto file = files.begin().value().toObject();
+
+        QString content = file["content"].toString().trimmed();
+        content = content.replace("tcp://", "");
+
+        if (content.isEmpty() || content == lastTunnel)
+            return;
+
+        lastTunnel = content;
+
+        QStringList parts = content.split(":");
+        if (parts.size() != 2)
+            return;
+
+        emit connectionSettingsChanged(parts[0], parts[1].toInt());
+    });
+}
 
 ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -80,9 +127,10 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addWidget(container);
 
-    auto* layout = new QVBoxLayout(container);
-    layout->setContentsMargins(20, 20, 20, 20);
+    auto* containerLayout = new QVBoxLayout(container);
+    containerLayout->setContentsMargins(20, 20, 20, 20);
 
+    // Header remains fixed at the top
     auto* headerLayout = new QHBoxLayout();
     QLabel* title = new QLabel("Overlay Settings", this);
     title->setStyleSheet("font-size: 15px; color: #FFFFFF; background: transparent;");
@@ -96,8 +144,25 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     headerLayout->addWidget(title);
     headerLayout->addStretch();
     headerLayout->addWidget(closeBtn);
-    layout->addLayout(headerLayout);
-    layout->addSpacing(5);
+    containerLayout->addLayout(headerLayout);
+    containerLayout->addSpacing(5);
+
+    // Setup Scroll Area for settings body
+    QScrollArea* scrollArea = new QScrollArea(container);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setStyleSheet("QScrollArea { background: transparent; border: none; }"
+                              "QScrollBar:vertical { background: #1E1F22; width: 6px; border-radius: 3px; }"
+                              "QScrollBar::handle:vertical { background: #5865F2; border-radius: 3px; min-height: 20px; }"
+                              "QScrollBar::handle:vertical:hover { background: #4752C4; }"
+                              "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { background: none; height: 0px; }");
+
+    QWidget* scrollContent = new QWidget(scrollArea);
+    scrollContent->setObjectName("scrollContent");
+    scrollContent->setStyleSheet("QWidget#scrollContent { background: transparent; }");
+
+    auto* layout = new QVBoxLayout(scrollContent);
+    layout->setContentsMargins(0, 0, 8, 0);
 
     QSettings settings;
 
@@ -155,6 +220,44 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     });
     layout->addWidget(btnApplyNetwork);
 
+    /* ===================== GIST UI & SAVING ===================== */
+    layout->addSpacing(10);
+    layout->addWidget(new QLabel("GITHUB GIST ID", this));
+    gistIdInput = new QLineEdit(settings.value("gistId", "").toString(), this);
+    connect(gistIdInput, &QLineEdit::textChanged, this, [](const QString& text) {
+        QSettings().setValue("gistId", text);
+    });
+    layout->addWidget(gistIdInput);
+
+    layout->addWidget(new QLabel("GITHUB PAT", this));
+    patInput = new QLineEdit(settings.value("githubPat", "").toString(), this);
+    patInput->setEchoMode(QLineEdit::Password);
+    connect(patInput, &QLineEdit::textChanged, this, [](const QString& text) {
+        QSettings().setValue("githubPat", text);
+    });
+    layout->addWidget(patInput);
+
+    btnLoadGist = new QPushButton("Load IP:PORT from Gist", this);
+    layout->addWidget(btnLoadGist);
+
+    chkAutoRefresh = new QCheckBox("Auto refresh every 5 minutes", this);
+    chkAutoRefresh->setChecked(settings.value("autoGist", false).toBool());
+    connect(chkAutoRefresh, &QCheckBox::toggled, this, [](bool checked) {
+        QSettings().setValue("autoGist", checked);
+    });
+    layout->addWidget(chkAutoRefresh);
+
+    gistTimer = new QTimer(this);
+    gistTimer->setInterval(5 * 60 * 1000);
+    gistTimer->start();
+
+    connect(btnLoadGist, &QPushButton::clicked, this, &ConfigWindow::fetchGistTunnel);
+
+    connect(gistTimer, &QTimer::timeout, this, [this]() {
+        if (chkAutoRefresh->isChecked())
+            fetchGistTunnel();
+    });
+
     layout->addSpacing(10);
 
     layout->addWidget(new QLabel("OVERLAY OPACITY", this));
@@ -197,9 +300,17 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
         emit toggleEditMode(isEditing);
     });
 
+    scrollArea->setWidget(scrollContent);
+    containerLayout->addWidget(scrollArea);
+
     emit hideChannelNameChanged(chkHideName->isChecked());
     emit requireVcForHotkeysChanged(chkRequireVc->isChecked());
     emit opacityChanged(opacitySlider->value() / 100.0);
+
+    // Startup Check: If both Gist parameters are in use, pull instantly
+    if (!gistIdInput->text().isEmpty() && !patInput->text().isEmpty()) {
+        fetchGistTunnel();
+    }
 }
 
 void ConfigWindow::mousePressEvent(QMouseEvent* event) {

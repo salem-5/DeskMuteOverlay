@@ -11,6 +11,12 @@
 #include <QPoint>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QTimer>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QUrl>
 
 class BindButton : public QPushButton {
     Q_OBJECT
@@ -18,8 +24,8 @@ public:
     explicit BindButton(const QString& currentBind, QWidget* parent = nullptr);
     QString currentBindStr;
 
-    signals:
-        void bindChanged(const QString& newBind);
+signals:
+    void bindChanged(const QString& newBind);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -31,8 +37,8 @@ class ConfigWindow : public QWidget {
 public:
     explicit ConfigWindow(QWidget* parent = nullptr);
 
-    signals:
-        void toggleEditMode(bool editing);
+signals:
+    void toggleEditMode(bool editing);
     void hideChannelNameChanged(bool hidden);
     void requireVcForHotkeysChanged(bool require);
     void connectionSettingsChanged(const QString& host, int port);
@@ -43,11 +49,16 @@ public:
     void deafenKeyChanged(const QString& sequence);
     void configKeyChanged(const QString& sequence);
 
+    void tunnelUpdated(const QString& host, int port);
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
+
+private:
+    void fetchGistTunnel();
 
 private:
     QPushButton* btnEditMode;
@@ -57,11 +68,22 @@ private:
     QLineEdit* hostInput;
     QSpinBox* portInput;
     QPushButton* btnApplyNetwork;
+
     QSlider* opacitySlider;
 
     BindButton* bindMute;
     BindButton* bindDeafen;
     BindButton* bindConfig;
+
+    // GitHub / Gist UI
+    QLineEdit* gistIdInput;
+    QLineEdit* patInput;
+    QPushButton* btnLoadGist;
+    QCheckBox* chkAutoRefresh;
+
+    QTimer* gistTimer;
+    QNetworkAccessManager net;
+    QString lastTunnel;
 
     bool isEditing = false;
     QPoint dragPosition;
