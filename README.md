@@ -8,12 +8,16 @@ This project was built to solve a very specific personal problem and likely will
 
 ## Screenshots
 
-## Screenshots
-
-| Overlay View | Settings View |
-| :---: | :---: |
-| <img src="resources/screenshots/overlay.png" alt="Overlay View" height="300"/> | <img src="resources/screenshots/settings.png" alt="Settings View" height="300"/> |
----
+<table style="width: 100%; border: none; text-align: center;">
+  <tr>
+    <td style="width: 50%;">
+      <img src="resources/screenshots/overlay.png" alt="Overlay View" style="width: 95%; height: auto;"/>
+    </td>
+    <td style="width: 50%;">
+      <img src="resources/screenshots/settings.png" alt="Settings View" style="width: 95%; height: auto;"/>
+    </td>
+  </tr>
+</table>
 
 ## Requirements
 
