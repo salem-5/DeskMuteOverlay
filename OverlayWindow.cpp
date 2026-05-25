@@ -7,6 +7,7 @@
 #include <QSettings>
 #include <QPainter>
 #include <QMenu>
+#include <QDebug>
 #include <QApplication>
 
 OverlayWindow::OverlayWindow(QWidget* parent) : QMainWindow(parent), networkManager(new QNetworkAccessManager(this)) {
@@ -231,19 +232,24 @@ void OverlayWindow::updateState(const QJsonObject& state) {
         }
     }
 }
-
 void OverlayWindow::loadAvatar(const QString& memberId, const QString& url) {
-    QNetworkRequest request((QUrl(url)));
+    QString safeUrl = url;
+    safeUrl.replace(".webp", ".png");
+    QNetworkRequest request((QUrl(safeUrl)));
     QNetworkReply* reply = networkManager->get(request);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, memberId, url]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, memberId, url, safeUrl]() {
         if (reply->error() == QNetworkReply::NoError) {
             QPixmap pix;
             if (pix.loadFromData(reply->readAll())) {
-                avatarCache.insert(url, pix);
+                avatarCache.insert(url, pix); // Keep caching under the original URL string
                 if (activeWidgets.contains(memberId) && activeWidgets[memberId]->avatarUrl == url) {
                     activeWidgets[memberId]->setAvatar(pix);
                 }
+            } else {
+                qDebug() << "Still failing to decode data for:" << safeUrl;
             }
+        } else {
+            qDebug() << "Network Error:" << reply->errorString();
         }
         reply->deleteLater();
     });

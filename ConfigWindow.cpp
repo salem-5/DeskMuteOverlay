@@ -2,9 +2,64 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QMouseEvent>
 #include <QShowEvent>
 #include <QHideEvent>
+#include <QKeySequence>
+
+BindButton::BindButton(const QString& currentBind, QWidget* parent) : QPushButton(currentBind, parent) {
+    currentBindStr = currentBind;
+    setCheckable(true);
+    setFocusPolicy(Qt::StrongFocus);
+    setStyleSheet("BindButton { background-color: #1E1F22; border: none; border-radius: 8px; padding: 8px; color: #F2F3F5; font-weight: bold; text-align: left; } "
+                  "BindButton:checked { background-color: #383A40; color: #FFFFFF; } "
+                  "BindButton:hover { background-color: #2B2D31; }");
+
+    connect(this, &QPushButton::toggled, this, [this](bool checked) {
+        setText(checked ? "Listening (Press Key or Mouse 4/5)..." : currentBindStr);
+    });
+}
+
+void BindButton::keyPressEvent(QKeyEvent* event) {
+    if (!isChecked()) {
+        QPushButton::keyPressEvent(event);
+        return;
+    }
+    if (event->key() == Qt::Key_Escape) {
+        setChecked(false);
+        return;
+    }
+    int key = event->key();
+    // Ignore stand-alone modifier presses until combined with a main key
+    if (key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta) {
+        return;
+    }
+
+    QKeySequence seq(event->modifiers() | key);
+    currentBindStr = seq.toString();
+    setChecked(false);
+    emit bindChanged(currentBindStr);
+}
+
+void BindButton::mousePressEvent(QMouseEvent* event) {
+    if (!isChecked()) {
+        QPushButton::mousePressEvent(event);
+        return;
+    }
+    // Handle specific Extra Mouse Buttons (4 and 5)
+    if (event->button() == Qt::BackButton || event->button() == Qt::ExtraButton1) {
+        currentBindStr = "Mouse 4";
+        setChecked(false);
+        emit bindChanged(currentBindStr);
+    } else if (event->button() == Qt::ForwardButton || event->button() == Qt::ExtraButton2) {
+        currentBindStr = "Mouse 5";
+        setChecked(false);
+        emit bindChanged(currentBindStr);
+    } else if (event->button() == Qt::LeftButton || event->button() == Qt::RightButton) {
+        // Cancel binding if they just left/right click
+        setChecked(false);
+    }
+}
+
 
 ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -15,8 +70,8 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     container->setStyleSheet("QWidget { background-color: #111214; color: #F2F3F5; border-radius: 16px; } "
                              "QCheckBox { font-size: 13px; font-weight: 500; padding: 2px; } "
                              "QLabel { font-size: 11px; font-weight: bold; color: #80848E; } "
-                             "QLineEdit, QSpinBox, QKeySequenceEdit { background-color: #1E1F22; border: none; border-radius: 8px; padding: 8px; color: #F2F3F5; font-weight: bold; } "
-                             "QPushButton { background-color: #5865F2; border: none; padding: 10px; border-radius: 8px; font-weight: bold; } "
+                             "QLineEdit, QSpinBox { background-color: #1E1F22; border: none; border-radius: 8px; padding: 8px; color: #F2F3F5; font-weight: bold; } "
+                             "QPushButton { background-color: #5865F2; border: none; padding: 10px; border-radius: 8px; font-weight: bold; color: white; } "
                              "QPushButton:hover { background-color: #4752C4; } "
                              "QSlider::groove:horizontal { border-radius: 4px; height: 8px; background: #1E1F22; } "
                              "QSlider::handle:horizontal { background: #5865F2; width: 16px; margin: -4px 0; border-radius: 8px; }");
@@ -50,19 +105,19 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
 
     auto* col1 = new QVBoxLayout();
     col1->addWidget(new QLabel("MUTE BIND", this));
-    bindMute = new QKeySequenceEdit(QKeySequence(settings.value("bindMute", "Ctrl+M").toString()), this);
-    connect(bindMute, &QKeySequenceEdit::keySequenceChanged, this, [this](const QKeySequence& ks) {
-        QSettings().setValue("bindMute", ks.toString());
-        emit muteKeyChanged(ks.toString());
+    bindMute = new BindButton(settings.value("bindMute", "Ctrl+M").toString(), this);
+    connect(bindMute, &BindButton::bindChanged, this, [this](const QString& ks) {
+        QSettings().setValue("bindMute", ks);
+        emit muteKeyChanged(ks);
     });
     col1->addWidget(bindMute);
 
     auto* col2 = new QVBoxLayout();
     col2->addWidget(new QLabel("DEAFEN BIND", this));
-    bindDeafen = new QKeySequenceEdit(QKeySequence(settings.value("bindDeafen", "Ctrl+D").toString()), this);
-    connect(bindDeafen, &QKeySequenceEdit::keySequenceChanged, this, [this](const QKeySequence& ks) {
-        QSettings().setValue("bindDeafen", ks.toString());
-        emit deafenKeyChanged(ks.toString());
+    bindDeafen = new BindButton(settings.value("bindDeafen", "Ctrl+D").toString(), this);
+    connect(bindDeafen, &BindButton::bindChanged, this, [this](const QString& ks) {
+        QSettings().setValue("bindDeafen", ks);
+        emit deafenKeyChanged(ks);
     });
     col2->addWidget(bindDeafen);
 
@@ -71,10 +126,10 @@ ConfigWindow::ConfigWindow(QWidget* parent) : QWidget(parent) {
     layout->addLayout(bindsLayout);
 
     layout->addWidget(new QLabel("OPEN SETTINGS BIND", this));
-    bindConfig = new QKeySequenceEdit(QKeySequence(settings.value("bindConfig", "Ctrl+Shift+O").toString()), this);
-    connect(bindConfig, &QKeySequenceEdit::keySequenceChanged, this, [this](const QKeySequence& ks) {
-        QSettings().setValue("bindConfig", ks.toString());
-        emit configKeyChanged(ks.toString());
+    bindConfig = new BindButton(settings.value("bindConfig", "Ctrl+Shift+O").toString(), this);
+    connect(bindConfig, &BindButton::bindChanged, this, [this](const QString& ks) {
+        QSettings().setValue("bindConfig", ks);
+        emit configKeyChanged(ks);
     });
     layout->addWidget(bindConfig);
 

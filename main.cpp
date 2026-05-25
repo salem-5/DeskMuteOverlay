@@ -1,9 +1,26 @@
 #include <QApplication>
 #include <QHotkey>
 #include <QSettings>
+#include <functional>
 #include "DiscordClient.h"
 #include "OverlayWindow.h"
 #include "ConfigWindow.h"
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+HHOOK mouseHook = nullptr;
+std::function<void(int)> mouseCallback;
+
+LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode >= 0 && wParam == WM_XBUTTONDOWN) {
+        MSLLHOOKSTRUCT* hookStruct = (MSLLHOOKSTRUCT*)lParam;
+        int button = HIWORD(hookStruct->mouseData);
+        if (button == 1 && mouseCallback) mouseCallback(4); // Mouse 4
+        else if (button == 2 && mouseCallback) mouseCallback(5); // Mouse 5
+    }
+    return CallNextHookEx(mouseHook, nCode, wParam, lParam);
+}
+#endif
 
 int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationName("DeskMute");
@@ -45,30 +62,51 @@ int main(int argc, char *argv[]) {
     };
     QObject::connect(&overlay, &OverlayWindow::openSettingsRequested, showConfig);
 
-    QHotkey* shortcutMute = new QHotkey(QKeySequence(settings.value("bindMute", "Ctrl+M").toString()), true, &app);
+    QString muteSeq = settings.value("bindMute", "Ctrl+M").toString();
+    QString deafenSeq = settings.value("bindDeafen", "Ctrl+D").toString();
+    QString configSeq = settings.value("bindConfig", "Ctrl+Shift+D").toString();
+    auto getValidSeq = [](const QString& seq) {
+        return seq.startsWith("Mouse") ? QKeySequence() : QKeySequence(seq);
+    };
+
+    QHotkey* shortcutMute = new QHotkey(getValidSeq(muteSeq), true, &app);
     QObject::connect(shortcutMute, &QHotkey::activated, [&client, &overlay]() {
         if (overlay.canUseHotkeys()) client.sendAction("mute");
     });
 
-    QHotkey* shortcutDeafen = new QHotkey(QKeySequence(settings.value("bindDeafen", "Ctrl+D").toString()), true, &app);
+    QHotkey* shortcutDeafen = new QHotkey(getValidSeq(deafenSeq), true, &app);
     QObject::connect(shortcutDeafen, &QHotkey::activated, [&client, &overlay]() {
         if (overlay.canUseHotkeys()) client.sendAction("deafen");
     });
 
-    QHotkey* shortcutConfig = new QHotkey(QKeySequence(settings.value("bindConfig", "Ctrl+Shift+D").toString()), true, &app);
+    QHotkey* shortcutConfig = new QHotkey(getValidSeq(configSeq), true, &app);
     QObject::connect(shortcutConfig, &QHotkey::activated, showConfig);
 
-    QObject::connect(&config, &ConfigWindow::muteKeyChanged, [shortcutMute](const QString& seq) {
-        shortcutMute->setShortcut(QKeySequence(seq), true);
+    QObject::connect(&config, &ConfigWindow::muteKeyChanged, [&](const QString& seq) {
+        muteSeq = seq;
+        shortcutMute->setShortcut(getValidSeq(seq), true);
     });
-    QObject::connect(&config, &ConfigWindow::deafenKeyChanged, [shortcutDeafen](const QString& seq) {
-        shortcutDeafen->setShortcut(QKeySequence(seq), true);
+    QObject::connect(&config, &ConfigWindow::deafenKeyChanged, [&](const QString& seq) {
+        deafenSeq = seq;
+        shortcutDeafen->setShortcut(getValidSeq(seq), true);
     });
-    QObject::connect(&config, &ConfigWindow::configKeyChanged, [shortcutConfig](const QString& seq) {
-        shortcutConfig->setShortcut(QKeySequence(seq), true);
+    QObject::connect(&config, &ConfigWindow::configKeyChanged, [&](const QString& seq) {
+        configSeq = seq;
+        shortcutConfig->setShortcut(getValidSeq(seq), true);
     });
 
+#ifdef Q_OS_WIN
+    mouseCallback = [&](int btn) {
+        QString mStr = QString("Mouse %1").arg(btn);
+        if (muteSeq == mStr && overlay.canUseHotkeys()) client.sendAction("mute");
+        if (deafenSeq == mStr && overlay.canUseHotkeys()) client.sendAction("deafen");
+        if (configSeq == mStr) showConfig();
+    };
+    mouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, GetModuleHandle(NULL), 0);
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {
+        if (mouseHook) UnhookWindowsHookEx(mouseHook);
+    });
+#endif
     overlay.show();
-
     return app.exec();
 }
