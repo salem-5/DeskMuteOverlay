@@ -34,16 +34,21 @@ To build and run this project, you need:
 The overlay communicates via a TCP socket server opened by Discord. This requires a custom Vencord plugin.
 
 1. Clone the Vencord repository.
-2. Place the plugin files from the `web` subdirectory into these exact locations within the cloned Vencord directory:
+   ```bash
+   git clone https://github.com/Vendicated/Vencord.git
+   cd Vencord
+   ```
+3. Place the plugin files from the `web` subdirectory into these exact locations within the cloned Vencord directory:
    - `src/plugins/deskMute/index.ts`
    - `src/plugins/deskMute/native.ts`
-3. Install the dependencies first:
+4. Install the dependencies first:
    ```bash
    pnpm install
    ```
-4. Build and inject the plugin into your Discord client:
+5. Build and inject the plugin into your Discord client:
    ```bash
-   pnpm build && pnpm inject
+   pnpm build
+   pnpm inject
    ```
 
 ## Supported Systems
